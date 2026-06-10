@@ -1,0 +1,118 @@
+name: "Deploy Workflow"
+
+on:
+  push:
+    branches:
+      - main
+    # Do no trigger a run when any of these files have been changed  
+    paths-ignore:
+      - .gitignore
+      - README.md
+      - CONTRIBUTING.md
+      - LICENSE
+
+  pull_request:
+    branches:
+      - main
+  # Trigger a force deployment
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  # test job
+  test:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 18
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Run all the linters
+        run: npm run lint:all
+      
+      - name: Run URL checker
+        run: node script/url-checker.js -t $URL_CHECKER_TIMEOUT -d src/posts
+        env:
+          URL_CHECKER_TIMEOUT: ${{ vars.URL_CHECKER_TIMEOUT }}
+
+
+  # build job
+  build:
+    runs-on: ubuntu-latest
+    # Runs after test job
+    needs: test
+    # permissions for pages
+    permissions:
+      pages: write
+      id-token: write
+    
+    concurrency:
+      group: "pages"
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 18
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Github pages
+        run: |
+            REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2-)
+            PATH_PREFIX="/$REPO_NAME/"
+            npm run eleventy:prod
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Upload _site
+          path: _site
+
+
+  # deploy job
+  deploy:
+    runs-on: ubuntu-latest
+    # Runs after test and build job
+    needs: [test, build]
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          path: .
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Create Issue with status of the deployment
+        run: |
+          gh issue create \
+            --title "$(date +'%Y-%m-%d') - Deployment: ${{ job.status }}" \
+            --body "URL: ${{ steps.deployment.outputs.page_url }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
