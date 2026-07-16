@@ -28,7 +28,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 2
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -48,11 +47,10 @@ jobs:
       - name: Run URL checker
         run: node script/url-checker.js -t ${{ vars.URL_CHECKER_TIMEOUT }} -d src/posts
 
-    build:
+  build:
     needs: test
     runs-on: ubuntu-latest
     timeout-minutes: 2
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -82,7 +80,7 @@ jobs:
         with:
           path: _site
 
-   deploy:
+  deploy:
     needs:
       - test
       - build
@@ -91,7 +89,6 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
@@ -105,8 +102,3 @@ jobs:
           gh issue create \
             --title "$(date +'%Y-%m-%d') - Deployment: ${{ job.status }}" \
             --body "URL: ${{ steps.deployment.outputs.page_url }}"
-
-
-
-    
-
