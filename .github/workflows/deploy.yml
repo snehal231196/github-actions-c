@@ -5,10 +5,7 @@ on:
     branches:
       - main
     paths-ignore:
-      - .gitignore
       - README.md
-      - CONTRIBUTING.md
-      - LICENSE
   pull_request:
     branches:
       - main
@@ -26,12 +23,12 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20.11.0
@@ -40,33 +37,33 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run linters
+      - name: Lint
         run: npm run lint:all
 
-      - name: Run URL checker
+      - name: Check URLs
         run: node script/url-checker.js -t 10 -d src/posts
 
   build:
     needs: test
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup GitHub Pages
+      - name: Setup Pages
         uses: actions/configure-pages@v4
 
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 18.12
+          node-version: 20.11.0
           cache: npm
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Extract repository name
+      - name: Set repo name
         run: echo "REPO_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
 
       - name: Build site
@@ -74,7 +71,7 @@ jobs:
           PATH_PREFIX: /${{ env.REPO_NAME }}/
         run: npm run prod
 
-      - name: Upload built site
+      - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: _site
@@ -84,10 +81,10 @@ jobs:
       - test
       - build
     runs-on: ubuntu-latest
-    timeout-minutes: 2
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
