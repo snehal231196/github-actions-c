@@ -51,8 +51,8 @@
     "stylelint-order": "^6.0.3"
   },
   "engines": {
-    "node": "^18.12",
-    "npm": "^9.2",
+    "node": ">=20.11.0",
+    "npm": ">=10",
     "yarn": "please-use-npm"
   }
 }
