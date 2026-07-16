@@ -1,5 +1,4 @@
 name: Deploy Knowledge Base
-# trigger registration
 
 on:
   push:
@@ -23,13 +22,11 @@ permissions:
   contents: read
   pages: write
   id-token: write
-  issues: write
 
 jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 2
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -40,6 +37,9 @@ jobs:
           node-version: 18.12
           cache: npm
 
+      - name: Use npm 9
+        run: npm install -g npm@9.2.0
+
       - name: Install dependencies
         run: npm ci
 
@@ -49,11 +49,10 @@ jobs:
       - name: Run URL checker
         run: node script/url-checker.js -t ${{ vars.URL_CHECKER_TIMEOUT }} -d src/posts
 
-    build:
+  build:
     needs: test
     runs-on: ubuntu-latest
     timeout-minutes: 2
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -64,8 +63,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 18.12
           cache: npm
+
+      - name: Use npm 9
+        run: npm install -g npm@9.2.0
 
       - name: Install dependencies
         run: npm ci
@@ -83,7 +85,7 @@ jobs:
         with:
           path: _site
 
-   deploy:
+  deploy:
     needs:
       - test
       - build
@@ -92,22 +94,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
-      - name: Create deployment status issue
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh issue create \
-            --title "$(date +'%Y-%m-%d') - Deployment: ${{ job.status }}" \
-            --body "URL: ${{ steps.deployment.outputs.page_url }}"
-
-
-
-    
-
