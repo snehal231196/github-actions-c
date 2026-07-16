@@ -210,3 +210,8 @@ spruecss-eleventy-documentation-template/
 
     ...
     ```
+
+## Project Links
+
+- GitHub Repository: https://github.com/snehal231196/github-actions-c
+- Published Website: https://snehal231196.github.io/github-actions-c/
